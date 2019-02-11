@@ -1,4 +1,4 @@
-defmodule ExWorker.Queue do
+defmodule ExWorker.Server do
   use GenServer
 
   # GenServer API
