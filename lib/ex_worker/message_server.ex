@@ -11,9 +11,9 @@ defmodule ExWorker.MessageServer do
     loop()
   end
 
-  defp handle_message(_) do
-    :timer.sleep(100)
+  # make virtual message sending
+  defp handle_message(message), do: 5 |> :rand.uniform() |> do_handle_message(message)
 
-    {:ok, "Message sent"}
-  end
+  defp do_handle_message(1, message), do: {:error, message}
+  defp do_handle_message(_, message), do: {:ok, message}
 end

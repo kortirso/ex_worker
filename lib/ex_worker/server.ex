@@ -26,25 +26,35 @@ defmodule ExWorker.Server do
     [value | Enum.reverse(state)] |> Enum.reverse()
   end
 
-  # receive handle message result from message server
-  def handle_info({:send_message_result, _}, state) do
+  # receive sending result with error
+  def handle_info({:send_message_result, {:error, message}}, state) do
+    IO.puts "#{message} did not send"
+    {:noreply, place_value_to_end(state, message)}
+  end
+
+  # receive sending result with success
+  def handle_info({:send_message_result, {:ok, message}}, state) do
+    IO.puts "#{message} sent"
     {:noreply, state}
   end
 
   # scheduler work
   def handle_info(:work, state) do
-    IO.puts "Execute scheduler"
-
     caller = self()
-    send(@message_server_pid, {:send_message, caller, "SOMETHING"})
-
+    send_message(self(), state)
     schedule_work()
 
     {:noreply, state}
   end
 
-  # Run schedule n 5 seconds
-  defp schedule_work, do: Process.send_after(self(), :work, 5 * 1000)
+  defp send_message(caller, state) do
+    {_, message, state} = handle_call(:take_message, nil, state)
+    if not is_nil(message), do: send(@message_server_pid, {:send_message, caller, message})
+    state
+  end
+
+  # Run schedule n 1 second
+  defp schedule_work, do: Process.send_after(self(), :work, 1000)
 
   # Client API
 
