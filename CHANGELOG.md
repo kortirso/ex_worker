@@ -9,3 +9,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - CHANGELOG
 - Queue module with functions for get queue, add and take message
 - Supervision tree
+- MessageServer for sending, receive result in Server
