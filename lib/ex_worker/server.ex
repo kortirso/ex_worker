@@ -1,13 +1,14 @@
 defmodule ExWorker.Server do
   use GenServer
-  alias ExWorker.MessageServer
+  alias ExWorker.{MessageServer, DB.Queries}
 
   # GenServer API
 
   # init server
-  def init(messages) do
+  def init(_) do
     schedule_work()
     pool = 1..100 |> Enum.map(fn(_) -> MessageServer.start end)
+    messages = Queries.incompleted_messages
 
     {:ok, %{messages: messages, pool: pool}}
   end
@@ -26,7 +27,8 @@ defmodule ExWorker.Server do
   defp do_take_message([]), do: {nil, []}
 
   # add message to state
-  def handle_cast({:add_message, message}, state) do
+  def handle_cast({:add_message, value}, state) do
+    message = Queries.message_create(value)
     messages = place_value_to_end(state.messages, message)
 
     {:noreply, %{messages: messages, pool: state.pool}}
@@ -38,14 +40,17 @@ defmodule ExWorker.Server do
 
   # receive sending result with error
   def handle_info({:send_message_result, {:error, message}}, state) do
-    IO.puts "#{message} did not send"
+    IO.puts "#{message.id} did not send"
+    updated_message = update_message(message, nil, :failed)
 
-    {:noreply, %{messages: place_value_to_end(state.messages, message), pool: state.pool}}
+    {:noreply, %{messages: place_value_to_end(state.messages, updated_message), pool: state.pool}}
   end
 
   # receive sending result with success
   def handle_info({:send_message_result, {:ok, message}}, state) do
-    IO.puts "#{message} sent"
+    IO.puts "#{message.id} sent"
+    update_message(message, nil, :completed)
+
     {:noreply, state}
   end
 
@@ -60,11 +65,25 @@ defmodule ExWorker.Server do
   defp send_message(state) do
     caller = self()
     {_, message, state} = handle_call(:take_message, nil, state)
-    if not is_nil(message), do: send(Enum.at(state.pool, :rand.uniform(100)), {:send_message, caller, message})
+    do_send_message(caller, message, state.pool)
     state
   end
 
-  # Run schedule n 1 second
+  defp do_send_message(_, nil, _), do: nil
+
+  defp do_send_message(caller, message, pool) do
+    server_pid = Enum.at(pool, :rand.uniform(100))
+    updated_message = update_message(message, server_pid, :active)
+
+    send(server_pid, {:send_message, caller, updated_message})
+  end
+
+  defp update_message(message, server_pid, status) do
+    %{message | status: status, pid: server_pid}
+    |> Queries.message_update()
+  end
+
+  # Run schedule in 1 second
   defp schedule_work, do: Process.send_after(self(), :work, 100)
 
   # Client API

@@ -8,6 +8,8 @@ use Mix.Config
 # if you want to provide default values for your application for
 # third-party users, it should be done in your "mix.exs" file.
 
+config :mnesia, dir: '.mnesia/#{Mix.env}/#{node()}'
+
 # You can configure your application as:
 #
 #     config :ex_worker, key: :value
