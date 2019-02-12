@@ -1,35 +1,46 @@
 defmodule ExWorker.Server do
   use GenServer
-
-  @message_server_pid ExWorker.MessageServer.start
+  alias ExWorker.MessageServer
 
   # GenServer API
 
   # init server
-  def init(state) do
+  def init(messages) do
     schedule_work()
+    pool = 1..100 |> Enum.map(fn(_) -> MessageServer.start end)
 
-    {:ok, state}
+    {:ok, %{messages: messages, pool: pool}}
   end
 
   # take first message from state
-  def handle_call(:take_message, _, [value | state]), do: {:reply, value, state}
-  def handle_call(:take_message, _, []), do: {:reply, nil, []}
+  def handle_call(:take_message, _, state) do
+    {message, messages} = do_take_message(state.messages)
+
+    {:reply, message, %{messages: messages, pool: state.pool}}
+  end
 
   # return list of messages in the state
-  def handle_call(:list_messages, _, state), do: {:reply, state, state}
+  def handle_call(:list_messages, _, state), do: {:reply, state.messages, state}
+
+  defp do_take_message([message | messages]), do: {message, messages}
+  defp do_take_message([]), do: {nil, []}
 
   # add message to state
-  def handle_cast({:add_message, value}, state), do: {:noreply, place_value_to_end(state, value)}
+  def handle_cast({:add_message, message}, state) do
+    messages = place_value_to_end(state.messages, message)
 
-  defp place_value_to_end(state, value) do
-    [value | Enum.reverse(state)] |> Enum.reverse()
+    {:noreply, %{messages: messages, pool: state.pool}}
+  end
+
+  defp place_value_to_end(messages, message) do
+    [message | Enum.reverse(messages)] |> Enum.reverse()
   end
 
   # receive sending result with error
   def handle_info({:send_message_result, {:error, message}}, state) do
     IO.puts "#{message} did not send"
-    {:noreply, place_value_to_end(state, message)}
+
+    {:noreply, %{messages: place_value_to_end(state.messages, message), pool: state.pool}}
   end
 
   # receive sending result with success
@@ -40,21 +51,21 @@ defmodule ExWorker.Server do
 
   # scheduler work
   def handle_info(:work, state) do
-    caller = self()
-    send_message(self(), state)
     schedule_work()
+    state = send_message(state)
 
     {:noreply, state}
   end
 
-  defp send_message(caller, state) do
+  defp send_message(state) do
+    caller = self()
     {_, message, state} = handle_call(:take_message, nil, state)
-    if not is_nil(message), do: send(@message_server_pid, {:send_message, caller, message})
+    if not is_nil(message), do: send(Enum.at(state.pool, :rand.uniform(100)), {:send_message, caller, message})
     state
   end
 
   # Run schedule n 1 second
-  defp schedule_work, do: Process.send_after(self(), :work, 1000)
+  defp schedule_work, do: Process.send_after(self(), :work, 100)
 
   # Client API
 
@@ -67,6 +78,9 @@ defmodule ExWorker.Server do
 
   # add message to the state
   def add_message(value), do: GenServer.cast(__MODULE__, {:add_message, value})
+
+  # add array of messages to the state
+  def add_messages(list) when is_list(list), do: Enum.each(list, fn value -> add_message(value) end)
 
   # take first message from the state
   def take_message, do: GenServer.call(__MODULE__, :take_message)
