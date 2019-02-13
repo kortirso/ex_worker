@@ -41,14 +41,32 @@ defmodule ExWorker.Server do
   Add message to state
   """
   def handle_cast({:add_message, value}, state) do
-    message = Queries.message_create(value)
-    messages = place_value_to_end(state.messages, message)
+    messages =
+      value
+      |> Queries.message_create()
+      |> place_value_to_end(state.messages)
 
     {:noreply, %{messages: messages, pool: state.pool}}
   end
 
-  defp place_value_to_end(messages, message) do
-    [message | Enum.reverse(messages)] |> Enum.reverse()
+  @doc """
+  Add messages to state
+  """
+  def handle_cast({:add_messages, list}, state) do
+    messages =
+      list
+      |> Enum.map(fn value -> Queries.message_create(value) end)
+      |> place_list_to_end(state.messages)
+
+    {:noreply, %{messages: messages, pool: state.pool}}
+  end
+
+  defp place_value_to_end(addition, messages) do
+    [addition | Enum.reverse(messages)] |> Enum.reverse()
+  end
+
+  defp place_list_to_end(addition, messages) do
+    messages ++ addition
   end
 
   @doc """
@@ -58,7 +76,7 @@ defmodule ExWorker.Server do
     IO.puts "#{message.id} did not send"
     updated_message = update_message(message, nil, :failed)
 
-    {:noreply, %{messages: place_value_to_end(state.messages, updated_message), pool: state.pool}}
+    {:noreply, %{messages: place_value_to_end(updated_message, state.messages), pool: state.pool}}
   end
 
   @doc """
@@ -150,7 +168,7 @@ defmodule ExWorker.Server do
   @doc """
   Add array of messages to the state
   """
-  def add_messages(list) when is_list(list), do: Enum.each(list, fn value -> add_message(value) end)
+  def add_messages(list) when is_list(list), do: GenServer.cast(__MODULE__, {:add_messages, list})
 
   @doc """
   Take first message from the state
