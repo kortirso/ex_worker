@@ -10,7 +10,7 @@ by adding `ex_worker` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_worker, "~> 0.1.4"}
+    {:ex_worker, "~> 0.1.5"}
   ]
 end
 
