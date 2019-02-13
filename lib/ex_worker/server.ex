@@ -91,6 +91,14 @@ defmodule ExWorker.Server do
 
   defp do_send_message(caller, message, state, index) do
     server_pid = Enum.at(state.pool, index)
+    if Process.alive?(server_pid) do
+      send_message_to_server(caller, message, state, index, server_pid)
+    else
+      do_send_message(caller, message, state, index + 1)
+    end
+  end
+
+  defp send_message_to_server(caller, message, state, index, server_pid) do
     updated_message = update_message(message, server_pid, :active)
     send(server_pid, {:send_message, caller, updated_message})
 
