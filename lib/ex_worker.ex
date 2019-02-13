@@ -1,4 +1,6 @@
 defmodule ExWorker do
+  @moduledoc false
+
   use Application
 
   @doc """

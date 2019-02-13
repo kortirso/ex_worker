@@ -1,4 +1,6 @@
 defmodule ExWorker.DB.Mnesia do
+  @moduledoc false
+
   alias ExWorker.DB.Message
 
   def setup!(nodes \\ [node()]) do
@@ -13,10 +15,6 @@ defmodule ExWorker.DB.Mnesia do
     Memento.start
 
     # Create the DB with Disk Copies
-    # TODO:
-    # Use Memento.Table.wait when it gets implemented
-    # @db.create!(disk: nodes)
-    # @db.wait(15000)
     Memento.Table.create!(Message, disc_copies: nodes)
   end  
 end

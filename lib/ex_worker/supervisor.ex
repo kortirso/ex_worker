@@ -1,4 +1,6 @@
 defmodule ExWorker.Supervisor do
+  @moduledoc false
+
   import Supervisor.Spec
 
   # Starts the Supervision Tree
