@@ -76,7 +76,7 @@ defmodule ExWorker.Server do
     IO.puts "#{message.id} did not send"
     updated_message = update_message(message, nil, :failed)
 
-    {:noreply, %{messages: place_value_to_end(state.messages, updated_message), pool: state.pool}}
+    {:noreply, %{messages: place_value_to_end(updated_message, state.messages), pool: state.pool}}
   end
 
   @doc """
