@@ -4,14 +4,15 @@ defmodule ExWorker.Server do
   use GenServer
   alias ExWorker.{MessageServer, DB.Queries}
 
-  @message_servers 100
+  @default_message_servers 100
 
   # GenServer API
 
   # init server
   def init(_) do
+    IO.puts "ExWorker server is running"
     schedule_work()
-    pool = 1..@message_servers |> Enum.map(fn(_) -> MessageServer.start end)
+    pool = 1..message_servers_count() |> Enum.map(fn(_) -> MessageServer.start end)
     messages = Queries.incompleted_messages
 
     {:ok, %{messages: messages, pool: pool}}
@@ -74,7 +75,6 @@ defmodule ExWorker.Server do
   end
 
   defp do_send_message(_, nil, state, _), do: state
-  defp do_send_message(_, _, state, index) when index == @message_servers, do: state
 
   defp do_send_message(caller, message, state, index) do
     server_pid = Enum.at(state.pool, index)
@@ -82,7 +82,7 @@ defmodule ExWorker.Server do
     send(server_pid, {:send_message, caller, updated_message})
 
     {_, message, state} = handle_call(:take_message, nil, state)
-    do_send_message(caller, message, state, index + 1)
+    if index == message_servers_count(), do: do_send_message(nil, nil, state, nil), else: do_send_message(caller, message, state, index + 1)
   end
 
   defp update_message(message, server_pid, status) do
@@ -91,7 +91,10 @@ defmodule ExWorker.Server do
   end
 
   # Run schedule in 1 second
-  defp schedule_work, do: Process.send_after(self(), :work, 1000)
+  defp schedule_work, do: Process.send_after(self(), :work, 500)
+
+  # number of message server
+  defp message_servers_count, do: Application.get_env(:ex_worker, :message_servers_amount) || @default_message_servers
 
   # Client API
 
