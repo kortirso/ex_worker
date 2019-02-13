@@ -81,20 +81,33 @@ defmodule ExWorker.Server do
     {:noreply, state}
   end
 
+  # define caller pid
   defp send_messages(state) do
     caller = self()
-    {_, message, state} = handle_call(:take_message, nil, state)
-    do_send_message(caller, message, state, 0)
+
+    send_message(caller, state, 0)
   end
 
-  defp do_send_message(_, nil, state, _), do: state
+  # take message from state
+  defp send_message(caller, state, index) do
+    {_, message, state} = handle_call(:take_message, nil, state)
 
-  defp do_send_message(caller, message, state, index) do
+    send_message(caller, message, state, index)
+  end
+
+  # if message is nil then stop process
+  defp send_message(_, nil, state, _), do: state
+
+  # if message is exist then check server_pid for alive
+  defp send_message(caller, message, state, index) do
     server_pid = Enum.at(state.pool, index)
+
     if Process.alive?(server_pid) do
+      # send message to alive server
       send_message_to_server(caller, message, state, index, server_pid)
     else
-      do_send_message(caller, message, state, index + 1)
+      # check next server for alive
+      send_message(caller, message, state, index + 1)
     end
   end
 
@@ -102,8 +115,8 @@ defmodule ExWorker.Server do
     updated_message = update_message(message, server_pid, :active)
     send(server_pid, {:send_message, caller, updated_message})
 
-    {_, message, state} = handle_call(:take_message, nil, state)
-    if index == message_servers_count(), do: do_send_message(nil, nil, state, nil), else: do_send_message(caller, message, state, index + 1)
+    # if server is not last then try to send next message
+    if index + 1 == message_servers_count(), do: state, else: send_message(caller, state, index + 1)
   end
 
   defp update_message(message, server_pid, status) do
@@ -122,9 +135,7 @@ defmodule ExWorker.Server do
   @doc """
   Starts the Supervision Tree
   """
-  def start_link(state \\ []) do
-    GenServer.start_link(__MODULE__, state, name: __MODULE__)
-  end
+  def start_link(state \\ []), do: GenServer.start_link(__MODULE__, state, name: __MODULE__)
 
   @doc """
   Render list messages

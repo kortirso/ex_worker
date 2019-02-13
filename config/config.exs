@@ -10,7 +10,7 @@ use Mix.Config
 
 config :mnesia, dir: '.mnesia/#{Mix.env}/#{node()}'
 
-config :ex_worker, message_servers_amount: 100
+config :ex_worker, message_servers_amount: 10
 
 # You can configure your application as:
 #
