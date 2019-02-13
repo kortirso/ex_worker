@@ -2,12 +2,14 @@ defmodule ExWorker.Server do
   use GenServer
   alias ExWorker.{MessageServer, DB.Queries}
 
+  @message_servers 100
+
   # GenServer API
 
   # init server
   def init(_) do
     schedule_work()
-    pool = 1..100 |> Enum.map(fn(_) -> MessageServer.start end)
+    pool = 1..@message_servers |> Enum.map(fn(_) -> MessageServer.start end)
     messages = Queries.incompleted_messages
 
     {:ok, %{messages: messages, pool: pool}}
@@ -57,25 +59,28 @@ defmodule ExWorker.Server do
   # scheduler work
   def handle_info(:work, state) do
     schedule_work()
-    state = send_message(state)
+    state = send_messages(state)
 
     {:noreply, state}
   end
 
-  defp send_message(state) do
+  defp send_messages(state) do
     caller = self()
     {_, message, state} = handle_call(:take_message, nil, state)
-    do_send_message(caller, message, state.pool)
+    state = do_send_message(caller, message, state, 0)
     state
   end
 
-  defp do_send_message(_, nil, _), do: nil
+  defp do_send_message(_, nil, state, _), do: state
+  defp do_send_message(_, _, state, index) when index == @message_servers, do: state
 
-  defp do_send_message(caller, message, pool) do
-    server_pid = Enum.at(pool, :rand.uniform(100))
+  defp do_send_message(caller, message, state, index) do
+    server_pid = Enum.at(state.pool, index)
     updated_message = update_message(message, server_pid, :active)
-
     send(server_pid, {:send_message, caller, updated_message})
+
+    {_, message, state} = handle_call(:take_message, nil, state)
+    do_send_message(caller, message, state, index + 1)
   end
 
   defp update_message(message, server_pid, status) do
@@ -84,7 +89,7 @@ defmodule ExWorker.Server do
   end
 
   # Run schedule in 1 second
-  defp schedule_work, do: Process.send_after(self(), :work, 100)
+  defp schedule_work, do: Process.send_after(self(), :work, 1000)
 
   # Client API
 
