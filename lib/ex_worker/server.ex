@@ -76,7 +76,7 @@ defmodule ExWorker.Server do
     IO.puts "#{message.id} did not send"
     updated_message = update_message(message, nil, :failed)
 
-    {:noreply, %{messages: place_value_to_end(updated_message, state.messages), pool: state.pool}}
+    {:noreply, %{messages: place_value_to_end(state.messages, updated_message), pool: state.pool}}
   end
 
   @doc """
@@ -87,6 +87,19 @@ defmodule ExWorker.Server do
     update_message(message, nil, :completed)
 
     {:noreply, state}
+  end
+
+  @doc """
+  Handle terminating
+  """
+  def terminate(_reason, %{pool: pool}) do
+    IO.puts "ExWorker server is shutting down"
+    cleanup(pool)
+  end
+
+  defp cleanup(pool) do
+    pool |> Enum.each(fn server_pid -> Process.exit(server_pid, :terminating) end)
+    IO.puts "All message servers are closed"
   end
 
   @doc """
