@@ -70,6 +70,19 @@ defmodule ExWorker.Server do
   end
 
   @doc """
+  Handle terminating
+  """
+  def terminate(_reason, %{pool: pool}) do
+    IO.puts "ExWorker server is shutting down"
+    cleanup(pool)
+  end
+
+  defp cleanup(pool) do
+    pool |> Enum.each(fn server_pid -> Process.exit(server_pid, :terminating) end)
+    IO.puts "All message servers are closed"
+  end
+
+  @doc """
   Receive sending result with error
   """
   def handle_info({:send_message_result, {:error, message}}, state) do
@@ -87,19 +100,6 @@ defmodule ExWorker.Server do
     update_message(message, nil, :completed)
 
     {:noreply, state}
-  end
-
-  @doc """
-  Handle terminating
-  """
-  def terminate(_reason, %{pool: pool}) do
-    IO.puts "ExWorker server is shutting down"
-    cleanup(pool)
-  end
-
-  defp cleanup(pool) do
-    pool |> Enum.each(fn server_pid -> Process.exit(server_pid, :terminating) end)
-    IO.puts "All message servers are closed"
   end
 
   @doc """

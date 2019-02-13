@@ -22,7 +22,7 @@ defmodule ExWorker.MixProject do
   def application do
     [
       mod: {ExWorker, []},
-      extra_applications: [:logger, :memento]
+      extra_applications: [:logger]
     ]
   end
 
