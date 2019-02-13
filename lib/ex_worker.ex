@@ -1,12 +1,10 @@
 defmodule ExWorker do
-  import Supervisor.Spec
+  use Application
 
-  # Starts the Supervision Tree
-  def start(params \\ []) do
-    children = [
-      worker(ExWorker.Server, params, name: ExWorker.Server)
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one)
+  @doc """
+  Starts the ExWorker Application (and its Supervision Tree)
+  """
+  def start(_, _) do
+    ExWorker.Supervisor.start_link
   end
 end

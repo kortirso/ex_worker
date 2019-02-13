@@ -10,7 +10,7 @@ by adding `ex_worker` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_worker, "~> 0.1.0"}
+    {:ex_worker, "~> 0.1.1"}
   ]
 end
 ```
@@ -27,7 +27,7 @@ config :mnesia, dir: 'mnesia/#{Mix.env}/#{node()}' # Notice the single quotes
 And run the following mix task:
 
 ```bash
-mix que.setup
+mix ex_worker.setup
 ```
 
 This will create the Mnesia schema and job database for you. For a
