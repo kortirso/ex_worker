@@ -1,7 +1,7 @@
 defmodule ExWorker.DB do
   @moduledoc false
 
-  # Memento Table Definition
+  # Memento table definition
   defmodule Message do
     use Memento.Table,
       attributes: [:id, :message, :status, :pid],

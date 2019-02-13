@@ -8,7 +8,9 @@ defmodule ExWorker.Server do
 
   # GenServer API
 
-  # init server
+  @doc """
+  Init server
+  """
   def init(_) do
     IO.puts "ExWorker server is running"
     schedule_work()
@@ -18,20 +20,26 @@ defmodule ExWorker.Server do
     {:ok, %{messages: messages, pool: pool}}
   end
 
-  # take first message from state
+  @doc """
+  Take first message from state
+  """
   def handle_call(:take_message, _, state) do
     {message, messages} = do_take_message(state.messages)
 
     {:reply, message, %{messages: messages, pool: state.pool}}
   end
 
-  # return list of messages in the state
+  @doc """
+  Return list of messages in the state
+  """
   def handle_call(:list_messages, _, state), do: {:reply, state.messages, state}
 
   defp do_take_message([message | messages]), do: {message, messages}
   defp do_take_message([]), do: {nil, []}
 
-  # add message to state
+  @doc """
+  Add message to state
+  """
   def handle_cast({:add_message, value}, state) do
     message = Queries.message_create(value)
     messages = place_value_to_end(state.messages, message)
@@ -43,7 +51,9 @@ defmodule ExWorker.Server do
     [message | Enum.reverse(messages)] |> Enum.reverse()
   end
 
-  # receive sending result with error
+  @doc """
+  Receive sending result with error
+  """
   def handle_info({:send_message_result, {:error, message}}, state) do
     IO.puts "#{message.id} did not send"
     updated_message = update_message(message, nil, :failed)
@@ -51,7 +61,9 @@ defmodule ExWorker.Server do
     {:noreply, %{messages: place_value_to_end(state.messages, updated_message), pool: state.pool}}
   end
 
-  # receive sending result with success
+  @doc """
+  Receive sending result with success
+  """
   def handle_info({:send_message_result, {:ok, message}}, state) do
     IO.puts "#{message.id} sent"
     update_message(message, nil, :completed)
@@ -59,7 +71,9 @@ defmodule ExWorker.Server do
     {:noreply, state}
   end
 
-  # scheduler work
+  @doc """
+  Scheduler work
+  """
   def handle_info(:work, state) do
     schedule_work()
     state = send_messages(state)
@@ -70,8 +84,7 @@ defmodule ExWorker.Server do
   defp send_messages(state) do
     caller = self()
     {_, message, state} = handle_call(:take_message, nil, state)
-    state = do_send_message(caller, message, state, 0)
-    state
+    do_send_message(caller, message, state, 0)
   end
 
   defp do_send_message(_, nil, state, _), do: state
@@ -98,19 +111,30 @@ defmodule ExWorker.Server do
 
   # Client API
 
+  @doc """
+  Starts the Supervision Tree
+  """
   def start_link(state \\ []) do
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
-  # render list messages
+  @doc """
+  Render list messages
+  """
   def list_messages, do: GenServer.call(__MODULE__, :list_messages)
 
-  # add message to the state
+  @doc """
+  Add message to the state
+  """
   def add_message(value), do: GenServer.cast(__MODULE__, {:add_message, value})
 
-  # add array of messages to the state
+  @doc """
+  Add array of messages to the state
+  """
   def add_messages(list) when is_list(list), do: Enum.each(list, fn value -> add_message(value) end)
 
-  # take first message from the state
+  @doc """
+  Take first message from the state
+  """
   def take_message, do: GenServer.call(__MODULE__, :take_message)
 end

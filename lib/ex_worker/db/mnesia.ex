@@ -3,6 +3,9 @@ defmodule ExWorker.DB.Mnesia do
 
   alias ExWorker.DB.Message
 
+  @doc """
+  Setup DB
+  """
   def setup!(nodes \\ [node()]) do
     # Create the DB directory (if custom path given)
     if path = Application.get_env(:mnesia, :dir) do

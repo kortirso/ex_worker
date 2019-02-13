@@ -2,7 +2,7 @@ defmodule ExWorker.MixProject do
   use Mix.Project
 
   @description """
-    Queue processing with Elixir
+    Messages processing with Elixir
   """
 
   def project do

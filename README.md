@@ -35,6 +35,14 @@ And run the following mix task:
 mix ex_worker.setup
 ```
 
+## Usage
+
+```elixir
+ExWorker.Server.add_message("some text")
+
+ExWorker.Server.add_messages(["some text", "another text"])
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/kortirso/ex_worker.

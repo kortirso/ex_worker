@@ -1,6 +1,9 @@
 defmodule ExWorker.MessageServer do
   @moduledoc false
 
+  @doc """
+  Start Message server
+  """
   def start do
     spawn(&loop/0)
   end

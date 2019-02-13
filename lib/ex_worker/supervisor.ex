@@ -3,7 +3,9 @@ defmodule ExWorker.Supervisor do
 
   import Supervisor.Spec
 
-  # Starts the Supervision Tree
+  @doc """
+  Starts the Supervision Tree
+  """
   def start(params \\ []) do
     children = [
       worker(ExWorker.Server, params, name: ExWorker.Server)
