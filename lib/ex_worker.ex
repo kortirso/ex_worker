@@ -4,7 +4,7 @@ defmodule ExWorker do
   @doc """
   Starts the ExWorker Application (and its Supervision Tree)
   """
-  def start(_, _) do
+  def start(_type, _args) do
     ExWorker.Supervisor.start
   end
 end
