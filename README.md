@@ -1,6 +1,6 @@
 # ExWorker
 
-**TODO: Add description**
+Simple example of message processing with Elixir
 
 ## Installation
 
