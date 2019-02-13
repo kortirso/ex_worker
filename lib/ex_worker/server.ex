@@ -8,6 +8,7 @@ defmodule ExWorker.Server do
 
   # init server
   def init(_) do
+    IO.puts "Server is running"
     schedule_work()
     pool = 1..@message_servers |> Enum.map(fn(_) -> MessageServer.start end)
     messages = Queries.incompleted_messages
