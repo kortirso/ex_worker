@@ -8,7 +8,7 @@ defmodule ExWorker.MixProject do
   def project do
     [
       app: :ex_worker,
-      version: "0.1.3",
+      version: "0.1.4",
       elixir: "~> 1.7",
       name: "I18nParser",
       description: @description,
