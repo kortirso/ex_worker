@@ -78,6 +78,9 @@ defmodule ExWorker.Server do
   end
 
   defp cleanup(pool) do
+    Queries.active_messages
+    |> Enum.each(fn message -> update_message(message, nil, :failed) end)
+
     pool |> Enum.each(fn server_pid -> Process.exit(server_pid, :terminating) end)
     IO.puts "All message servers are closed"
   end

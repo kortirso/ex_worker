@@ -38,9 +38,17 @@ defmodule ExWorker.DB.Queries do
     run_select_query(
       {:or,
         {:==, :status, :created},
-        {:==, :status, :active},
         {:==, :status, :failed}
       }
+    )
+  end
+
+  @doc """
+  Get list of active messages
+  """
+  def active_messages do
+    run_select_query(
+      {:==, :status, :active}
     )
   end
 
